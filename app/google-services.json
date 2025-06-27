@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "835622767132",
+    "project_id": "scrolly-a7a58",
+    "storage_bucket": "scrolly-a7a58.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:835622767132:android:3b581df2525df4f23f2dd9",
+        "android_client_info": {
+          "package_name": "com.example.srolly"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCa3Ju6Y36__PfqfWmWMRAo-Qb5s-6HagM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
