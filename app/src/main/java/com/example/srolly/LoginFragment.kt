@@ -40,8 +40,12 @@ class LoginFragment : Fragment() {
         }
 
         binding.guestText.setOnClickListener {
+            val sharedPrefs = requireContext().getSharedPreferences("user_prefs", android.content.Context.MODE_PRIVATE)
+            sharedPrefs.edit().putBoolean("is_guest", true).apply()
+
             findNavController().navigate(R.id.action_loginFragment_to_homeFragment)
         }
+
 
         binding.forgotPassword.setOnClickListener {
             findNavController().navigate(R.id.action_loginFragment_to_forgotPasswordFragment)
@@ -77,6 +81,9 @@ class LoginFragment : Fragment() {
                 binding.loginProgressBar.visibility = View.GONE
 
                 if (task.isSuccessful) {
+                    // ✅ Reset guest flag
+                    requireContext().getSharedPreferences("user_prefs", android.content.Context.MODE_PRIVATE)
+                        .edit().putBoolean("is_guest", false).apply()
                     Toast.makeText(requireContext(), "Login successful!", Toast.LENGTH_SHORT).show()
                     findNavController().navigate(R.id.action_loginFragment_to_homeFragment)
                 } else {

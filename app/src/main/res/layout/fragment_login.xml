@@ -90,7 +90,7 @@
        app:layout_constraintEnd_toEndOf="parent"
        android:layout_marginTop="24dp">
 
-      <Button
+      <android.widget.Button
           android:id="@+id/loginButton"
           android:layout_width="match_parent"
           android:layout_height="match_parent"

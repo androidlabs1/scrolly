@@ -94,14 +94,14 @@ class SignupFragment : Fragment() {
                     )
 
                     userRef.setValue(userData)
+                    // ✅ Reset guest flag
+                    requireContext().getSharedPreferences("user_prefs", android.content.Context.MODE_PRIVATE)
+                        .edit().putBoolean("is_guest", false).apply()
                     Toast.makeText(requireContext(), "Account created!", Toast.LENGTH_SHORT).show()
                     Log.d("SignupFlow", "User info saved. Navigating now...")
 
                     if (isAdded && findNavController().currentDestination?.id == R.id.signupFragment) {
-                        val bundle = Bundle().apply {
-                            putString("userName", name)
-                        }
-                        findNavController().navigate(R.id.action_signupFragment_to_homeFragment , bundle)
+                        findNavController().navigate(R.id.action_signupFragment_to_homeFragment)
                     }
 
                 } else {
