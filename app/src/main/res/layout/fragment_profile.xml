@@ -3,9 +3,9 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/profileRootLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="24dp"
     android:background="@color/white"
     tools:context=".ProfileFragment">
 
@@ -14,8 +14,7 @@
         android:id="@+id/profileLoader"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="100dp"
-        android:visibility="visible"
+        android:visibility="gone"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -25,27 +24,54 @@
     <LinearLayout
         android:id="@+id/profileContentLayout"
         android:layout_width="0dp"
-        android:layout_height="wrap_content"
+        android:layout_height="0dp"
         android:orientation="vertical"
-        android:visibility="gone"
-        android:gravity="center_horizontal"
+        android:visibility="visible"
+        android:padding="24dp"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
-        <!-- User Initial Circle -->
-        <TextView
-            android:id="@+id/profileInitial"
-            android:layout_width="100dp"
-            android:layout_height="100dp"
-            android:text="A"
-            android:textSize="32sp"
-            android:textStyle="bold"
-            android:gravity="center"
-            android:background="@drawable/circle_background"
-            android:textColor="@android:color/white"
-            android:layout_marginTop="48dp" />
+        <!-- Top Row: User Initial + Logout -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical|end"
+            android:layout_gravity="end"
+            android:weightSum="1">
+
+            <!-- User Initial Circle -->
+            <TextView
+                android:id="@+id/profileInitial"
+                android:layout_width="100dp"
+                android:layout_height="100dp"
+                android:text="A"
+                android:textSize="32sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:background="@drawable/circle_background"
+                android:textColor="@android:color/white" />
+
+            <!-- Spacer -->
+            <View
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+            <!-- Logout Button -->
+            <Button
+                android:id="@+id/logoutButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Logout"
+                android:textColor="@android:color/white"
+                android:backgroundTint="@android:color/holo_red_dark"
+                android:paddingLeft="12dp"
+                android:paddingRight="12dp"
+                android:layout_marginTop="16dp" />
+        </LinearLayout>
 
         <!-- Full Name -->
         <TextView
@@ -68,7 +94,7 @@
             android:textColor="@android:color/darker_gray"
             android:layout_marginTop="4dp" />
 
-        <!-- Edit Button -->
+        <!-- Edit Name Button -->
         <Button
             android:id="@+id/editNameButton"
             android:layout_width="match_parent"
@@ -79,16 +105,26 @@
             android:layout_marginTop="32dp"
             android:background="@drawable/button_gradient" />
 
-        <!-- Logout Button -->
-        <Button
-            android:id="@+id/logoutButton"
-            android:layout_width="match_parent"
-            android:layout_height="50dp"
-            android:text="Logout"
-            android:textColor="@android:color/white"
+        <!-- Most Used Apps Header -->
+        <TextView
+            android:id="@+id/usageHeader"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Most Used Apps"
             android:textStyle="bold"
-            android:backgroundTint="@android:color/holo_red_dark"
-            android:layout_marginTop="16dp" />
+            android:textColor="@color/black"
+            android:textSize="18sp"
+            android:layout_marginTop="24dp" />
+
+        <!-- RecyclerView: Fixed height to show list -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/usageRecyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="16dp"
+            android:scrollbars="vertical" />
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
