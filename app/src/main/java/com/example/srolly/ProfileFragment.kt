@@ -12,7 +12,9 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.EditText
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.srolly.ADAPTORS.AppUsageAdapter
@@ -25,7 +27,8 @@ import java.util.concurrent.TimeUnit
 class ProfileFragment : Fragment() {
 
     private var _binding: FragmentProfileBinding? = null
-    private val binding get() = _binding
+    // Using the backing property so that we never accidentally use binding when it's null.
+    private val binding get() = _binding!!
 
     private lateinit var firebaseAuth: FirebaseAuth
     private lateinit var firebaseDatabase: FirebaseDatabase
@@ -35,102 +38,158 @@ class ProfileFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View {
         _binding = FragmentProfileBinding.inflate(inflater, container, false)
-        return binding!!.root
+        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
-        Log.d("ProfileFragment", "View created")
+        Log.d("ProfileFragment", "onViewCreated triggered")
 
         firebaseAuth = FirebaseAuth.getInstance()
         firebaseDatabase = FirebaseDatabase.getInstance()
 
-        val isGuest = requireContext()
-            .getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
+        setupUI()
+        loadUserProfile()
+    }
+
+    private fun setupUI() {
+        // Setup logout and edit buttons
+        binding.logoutButton.setOnClickListener {
+            handleLogout()
+        }
+        binding.editNameButton.setOnClickListener {
+            handleEditName()
+        }
+    }
+
+    private fun loadUserProfile() {
+        val isGuest = requireContext().getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
             .getBoolean("is_guest", false)
 
-        binding?.apply {
-            profileLoader.visibility = View.VISIBLE
-            profileContentLayout.visibility = View.GONE
-        }
+        binding.profileLoader.visibility = View.VISIBLE
+        binding.profileContentLayout.visibility = View.GONE
 
         if (isGuest || firebaseAuth.currentUser == null) {
-            Log.d("ProfileFragment", "Guest user detected")
-
-            binding?.apply {
-                profileInitial.text = "G"
-                fullNameText.text = "Guest User"
-                emailText.text = "Not logged in"
-
-                editNameButton.setOnClickListener {
-                    Toast.makeText(requireContext(), "Login to edit your name", Toast.LENGTH_SHORT).show()
-                }
-
-                profileLoader.visibility = View.GONE
-                profileContentLayout.visibility = View.VISIBLE
-            }
+            displayGuestProfile()
         } else {
-            Log.d("ProfileFragment", "Authenticated user detected")
-
-            val user = firebaseAuth.currentUser!!
-            val userId = user.uid
-            val userEmail = user.email ?: "Not available"
-
-            val userRef = firebaseDatabase.getReference("users").child(userId)
-            userRef.addListenerForSingleValueEvent(object : ValueEventListener {
-                override fun onDataChange(snapshot: DataSnapshot) {
-                    val name = snapshot.child("name").getValue(String::class.java) ?: "User"
-                    val initial = name.firstOrNull()?.uppercaseChar()?.toString() ?: "U"
-
-                    Log.d("Firebase", "User name: $name")
-
-                    binding?.apply {
-                        profileInitial.text = initial
-                        fullNameText.text = name
-                        emailText.text = userEmail
-
-                        profileLoader.visibility = View.GONE
-                        profileContentLayout.visibility = View.VISIBLE
-                    }
-                }
-
-                override fun onCancelled(error: DatabaseError) {
-                    Log.e("Firebase", "Failed to load profile: ${error.message}")
-                    Toast.makeText(requireContext(), "Failed to load profile", Toast.LENGTH_SHORT).show()
-                    binding?.profileLoader?.visibility = View.GONE
-                }
-            })
-
-            binding?.logoutButton?.setOnClickListener {
-                requireContext().getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
-                    .edit().putBoolean("is_guest", false).apply()
-
-                firebaseAuth.signOut()
-                Toast.makeText(requireContext(), "Logged out successfully", Toast.LENGTH_SHORT).show()
-                requireActivity().recreate()
-            }
-
-            binding?.editNameButton?.setOnClickListener {
-                Toast.makeText(requireContext(), "Edit name feature coming soon", Toast.LENGTH_SHORT).show()
-            }
+            displayUserProfile()
         }
+    }
 
-        // Check permission
+    private fun displayGuestProfile() {
+        binding.profileInitial.text = "G"
+        binding.fullNameText.text = "Guest User"
+        binding.emailText.text = "Not logged in"
+        binding.profileLoader.visibility = View.GONE
+        binding.profileContentLayout.visibility = View.VISIBLE
+    }
+
+    private fun displayUserProfile() {
+        val user = firebaseAuth.currentUser!!
+        val userRef = firebaseDatabase.getReference("users").child(user.uid)
+
+        userRef.addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                // Ensure the binding is still valid
+                if (!isAdded || _binding == null) return
+
+                val name = snapshot.child("name").getValue(String::class.java) ?: "User"
+                val initial = name.firstOrNull()?.uppercaseChar()?.toString() ?: "U"
+
+                binding.profileInitial.text = initial
+                binding.fullNameText.text = name
+                binding.emailText.text = user.email ?: "Not available"
+
+                binding.profileLoader.visibility = View.GONE
+                binding.profileContentLayout.visibility = View.VISIBLE
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                Log.e("ProfileFragment", "Failed to load user data", error.toException())
+                if (!isAdded || _binding == null) return
+                binding.profileLoader.visibility = View.GONE
+                binding.profileContentLayout.visibility = View.VISIBLE
+                Toast.makeText(requireContext(), "Failed to load profile", Toast.LENGTH_SHORT).show()
+            }
+        })
+    }
+
+    private fun handleLogout() {
+        val isGuest = requireContext().getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
+            .getBoolean("is_guest", false)
+        if (isGuest) {
+            requireContext().getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
+                .edit().putBoolean("is_guest", false).apply()
+        } else {
+            firebaseAuth.signOut()
+        }
+        Toast.makeText(requireContext(), "Logged out successfully", Toast.LENGTH_SHORT).show()
+        // Insert your navigation logic to go back to the login screen if needed.
+    }
+
+    private fun handleEditName() {
+        val isGuest = requireContext().getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
+            .getBoolean("is_guest", false)
+        if (isGuest || firebaseAuth.currentUser == null) {
+            Toast.makeText(requireContext(), "Login to edit your name", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val editText = EditText(requireContext()).apply {
+            hint = "Enter new name"
+            setText(binding.fullNameText.text.toString())
+        }
+        AlertDialog.Builder(requireContext())
+            .setTitle("Edit Name")
+            .setView(editText)
+            .setPositiveButton("Save") { _, _ ->
+                val newName = editText.text.toString().trim()
+                if (newName.isNotEmpty()) {
+                    updateUserName(newName)
+                } else {
+                    Toast.makeText(requireContext(), "Name cannot be empty", Toast.LENGTH_SHORT).show()
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun updateUserName(newName: String) {
+        val user = firebaseAuth.currentUser ?: return
+        val userRef = firebaseDatabase.getReference("users").child(user.uid)
+        userRef.child("name").setValue(newName)
+            .addOnSuccessListener {
+                binding.fullNameText.text = newName
+                binding.profileInitial.text = newName.firstOrNull()?.uppercaseChar()?.toString() ?: "U"
+                Toast.makeText(requireContext(), "Name updated successfully", Toast.LENGTH_SHORT).show()
+            }
+            .addOnFailureListener {
+                Toast.makeText(requireContext(), "Failed to update name", Toast.LENGTH_SHORT).show()
+            }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        Log.d("ProfileFragment", "onResume called")
+        loadAppUsage()
+    }
+
+    private fun loadAppUsage() {
         if (!hasUsageAccessPermission()) {
-            Log.w("Permission", "Usage access not granted")
-            Toast.makeText(requireContext(), "Please allow usage access to view app usage", Toast.LENGTH_LONG).show()
+            Toast.makeText(
+                requireContext(),
+                "Please allow usage access to view app usage",
+                Toast.LENGTH_LONG
+            ).show()
             startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
             return
         }
 
-        // Load usage data
+        Log.d("AppUsage", "Permission granted, loading usage data...")
         val usageList = getAppUsageStats()
-        Log.d("UsageStats", "Loaded ${usageList.size} apps")
+        Log.d("AppUsage", "Usage List Size: ${usageList.size}")
 
-        val adapter = AppUsageAdapter(usageList)
-        binding?.usageRecyclerView?.layoutManager = LinearLayoutManager(requireContext())
-        binding?.usageRecyclerView?.adapter = adapter
+        binding.usageRecyclerView.layoutManager = LinearLayoutManager(requireContext())
+        binding.usageRecyclerView.adapter = AppUsageAdapter(usageList)
     }
 
     private fun hasUsageAccessPermission(): Boolean {
@@ -140,54 +199,138 @@ class ProfileFragment : Fragment() {
             android.os.Process.myUid(),
             requireContext().packageName
         )
+        Log.d("PermissionCheck", "Mode: $mode")
         return mode == AppOpsManager.MODE_ALLOWED
     }
 
     private fun getAppUsageStats(): List<AppUsage> {
         val usageStatsManager = requireContext().getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
         val endTime = System.currentTimeMillis()
-        val startTime = endTime - TimeUnit.DAYS.toMillis(1)
+        // Using last 7 days to get better data
+        val startTime = endTime - TimeUnit.DAYS.toMillis(7)
+        Log.d("AppUsage", "Querying usage stats from $startTime to $endTime")
 
         val usageStatsList = usageStatsManager.queryUsageStats(
             UsageStatsManager.INTERVAL_DAILY,
             startTime,
             endTime
         )
+        Log.d("AppUsageRaw", "Retrieved ${usageStatsList?.size ?: 0} items from UsageStatsManager")
 
         val packageManager = requireContext().packageManager
         val usageMap = mutableMapOf<String, AppUsage>()
 
         usageStatsList?.forEach { usageStats ->
-            try {
-                val appInfo = packageManager.getApplicationInfo(usageStats.packageName, 0)
+            val packageName = usageStats.packageName
+            val totalTime = usageStats.totalTimeInForeground
+            if (totalTime < 1000) {
+                Log.d("AppUsage", "$packageName - zero usage")
+                return@forEach
+            }
 
-                // ✅ Skip system apps
-                if ((appInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0) return@forEach
+            try {
+                val appInfo = packageManager.getApplicationInfo(packageName, 0)
+
+                // Skip if it's our own app or a system app
+                if (isSystemApp(appInfo, packageName)) {
+                    Log.d("AppUsage", "Skipping system app: $packageName")
+                    return@forEach
+                }
 
                 val label = packageManager.getApplicationLabel(appInfo).toString()
                 val icon = packageManager.getApplicationIcon(appInfo)
+                Log.d("AppUsage", "Including: $packageName ($label) - $totalTime ms")
 
-                val prev = usageMap[usageStats.packageName]
-                val totalTime = usageStats.totalTimeInForeground
-                val newLaunch = prev?.launchCount ?: 0
-
-                usageMap[usageStats.packageName] = AppUsage(
-                    packageName = usageStats.packageName,
+                val previous = usageMap[packageName]
+                usageMap[packageName] = AppUsage(
+                    packageName = packageName,
                     appName = label,
                     icon = icon,
-                    totalTimeUsed = totalTime + (prev?.totalTimeUsed ?: 0),
-                    launchCount = newLaunch + 1
+                    totalTimeUsed = totalTime + (previous?.totalTimeUsed ?: 0),
+                    launchCount = (previous?.launchCount ?: 0) + getLaunchCountForApp(usageStatsManager, packageName, startTime, endTime)
                 )
-            } catch (e: PackageManager.NameNotFoundException) {
-                // Ignore
+            } catch (e: Exception) {
+                Log.e("AppUsage", "Error processing $packageName: ${e.message}")
             }
         }
 
-        return usageMap.values
-            .filter { it.totalTimeUsed > 0 } // Optional: hide unused apps
-            .sortedByDescending { it.totalTimeUsed }
-            .take(10)
+        val finalList = usageMap.values.sortedByDescending { it.totalTimeUsed }.take(15)
+        Log.d("AppUsage", "Final filtered app count: ${finalList.size}")
+        return finalList
     }
+
+    private fun getLaunchCountForApp(
+        usageStatsManager: UsageStatsManager,
+        packageName: String,
+        startTime: Long,
+        endTime: Long
+    ): Int {
+        var count = 0
+        try {
+            val events = usageStatsManager.queryEvents(startTime, endTime)
+            val event = android.app.usage.UsageEvents.Event()
+            while (events.hasNextEvent()) {
+                events.getNextEvent(event)
+                if (event.packageName == packageName && event.eventType == android.app.usage.UsageEvents.Event.MOVE_TO_FOREGROUND) {
+                    count++
+                }
+            }
+        } catch (e: Exception) {
+            Log.w("AppUsage", "Failed to retrieve events for $packageName: ${e.message}")
+        }
+        return if (count > 0) count else 1 // Default to 1 if no events found
+    }
+
+    private fun isSystemApp(appInfo: ApplicationInfo, packageName: String): Boolean {
+        val excludedPackages = listOf(
+            requireContext().packageName,
+            "com.android.systemui",
+            "com.android.settings",
+            "android",
+            "com.android.launcher",
+            "com.android.permissioncontroller",
+            "com.google.android.permissioncontroller",
+            "com.google.android.packageinstaller",
+            "com.miui.securitycenter",
+            "com.miui.securitycore",
+            "com.miui.home",
+            "com.miui.weather2",
+            "com.xiaomi.permissioncontroller",
+            "com.xiaomi.calendar",
+            "com.miui.yellowpage",
+            "com.miui.misound",
+            "com.miui.msa.global",
+            "com.miui.guardprovider",
+            "com.miui.notification",
+            "com.google.android.ext.services",
+            "com.google.android.projection.gearhead",
+            "com.google.android.gm",
+            "com.google.android.contacts",
+            "com.mediatek.ims",
+            "org.mipay.android.manager",
+            "com.milink.service",
+            "com.miui.daemon"
+        )
+
+        val pm = requireContext().packageManager
+
+        // Exclude by known package names
+        if (packageName in excludedPackages) {
+            Log.d("AppFilter", "Excluded system/utility app: $packageName")
+            return true
+        }
+
+        // Exclude if app has no launch intent (not user-launchable)
+        val launchIntent = pm.getLaunchIntentForPackage(packageName)
+        if (launchIntent == null) {
+            Log.d("AppFilter", "Excluded: $packageName (no launcher intent)")
+            return true
+        }
+
+        // Optionally: You can exclude apps with zero usage, but you already do that by checking `totalTimeInForeground < 1000`
+        return false
+    }
+
 
 
     override fun onDestroyView() {

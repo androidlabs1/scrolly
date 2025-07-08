@@ -27,21 +27,28 @@ class AppUsageAdapter(private val appList: List<AppUsage>) : RecyclerView.Adapte
 
     override fun onBindViewHolder(holder: UsageViewHolder, position: Int) {
         val app = appList[position]
-        Log.d("AppUsageAdapter", "Binding: ${app.appName}, Time: ${app.totalTimeUsed}, Launches: ${app.launchCount}")
+
+        Log.d("AppUsageAdapter", "Binding: ${app.appName}, Time: ${app.totalTimeUsed}ms, Launches: ${app.launchCount}")
+
         holder.appIcon.setImageDrawable(app.icon)
         holder.appName.text = app.appName
         holder.timeUsed.text = "Used: ${formatTime(app.totalTimeUsed)}"
-        holder.launchCount.text = "Opened: ${app.launchCount} times"
-
-
+        holder.launchCount.text = "Opened: ${app.launchCount} ${if (app.launchCount == 1) "time" else "times"}"
     }
 
     override fun getItemCount(): Int = appList.size
 
     private fun formatTime(ms: Long): String {
+        if (ms <= 0) return "0m"
+
         val hours = TimeUnit.MILLISECONDS.toHours(ms)
         val minutes = TimeUnit.MILLISECONDS.toMinutes(ms) % 60
         val seconds = TimeUnit.MILLISECONDS.toSeconds(ms) % 60
-        return String.format("%02dh %02dm %02ds", hours, minutes, seconds)
+
+        return when {
+            hours > 0 -> String.format("%dh %02dm", hours, minutes)
+            minutes > 0 -> String.format("%dm %02ds", minutes, seconds)
+            else -> String.format("%ds", seconds)
+        }
     }
 }

@@ -5,9 +5,32 @@
     <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS"
         tools:ignore="ProtectedPermissions" />
 
+    <queries>
+        <!-- Add apps you want to be able to detect -->
+        <package android:name="com.whatsapp" />
+        <package android:name="com.whatsapp.w4b" />
+        <package android:name="com.google.android.youtube" />
+        <package android:name="com.linkedin.android" />
+        <package android:name="com.indeed.android.jobsearch" />
+        <package android:name="com.google.android.apps.messaging" />
+        <package android:name="com.base.bankalfalah" />
+        <package android:name="com.google.android.gm" />
+        <package android:name="com.google.android.dialer" />
+        <package android:name="com.google.android.contacts" />
+        <package android:name="com.android.chrome" />
+
+        <!-- Discover launchable apps in general -->
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+    </queries>
+
+
 
     <application
         android:allowBackup="true"
+
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
@@ -16,6 +39,10 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Srolly"
         tools:targetApi="31">
+
+        <meta-data
+            android:name="android.app.usage.UsageStatsService"
+            android:value="android.app.usage.UsageStatsManager"/>
         <activity
             android:name=".MainActivity"
             android:exported="false" />
